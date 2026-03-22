@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { AssigneeSelector } from '@/components/issues/assignee-selector';
 import { SubIssues } from '@/components/issues/sub-issues';
+import { WorklogPanel } from '@/components/issues/worklog-panel';
 import { cn } from '@/lib/utils';
 
 type State = { id: string; name: string; color: string };
@@ -31,6 +32,14 @@ type Comment = {
   commentText: string | null;
   actorName: string | null;
   createdAt: Date;
+};
+type Worklog = {
+  id: string;
+  duration: number;
+  description: string | null;
+  loggedAt: Date;
+  userName: string | null;
+  userEmail: string | null;
 };
 
 type Issue = {
@@ -55,6 +64,7 @@ type Props = {
   comments: Comment[];
   assignees: Assignee[];
   subIssues: SubIssue[];
+  worklogs: Worklog[];
   projectId: string;
   workspaceSlug: string;
   currentUserId: string;
@@ -77,6 +87,7 @@ export function IssueDetailClient({
   comments,
   assignees,
   subIssues,
+  worklogs,
   projectId,
   workspaceSlug,
   currentUserId,
@@ -196,6 +207,13 @@ export function IssueDetailClient({
           projectId={projectId}
           workspaceSlug={workspaceSlug}
           subIssues={subIssues}
+        />
+
+        {/* Time tracking */}
+        <WorklogPanel
+          issueId={issue.id}
+          projectId={projectId}
+          worklogs={worklogs}
         />
 
         {/* Activity */}

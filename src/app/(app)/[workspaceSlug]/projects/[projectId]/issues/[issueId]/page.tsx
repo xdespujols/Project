@@ -9,6 +9,7 @@ import {
   issueAssignees,
   users,
   labels,
+  worklogs,
 } from '@/db/schema';
 import { eq, desc, and } from 'drizzle-orm';
 import Link from 'next/link';
@@ -79,6 +80,20 @@ export default async function IssueDetailPage({ params }: Props) {
     .innerJoin(users, eq(issueAssignees.userId, users.id))
     .where(eq(issueAssignees.issueId, issueId));
 
+  const worklogRows = await db
+    .select({
+      id: worklogs.id,
+      duration: worklogs.duration,
+      description: worklogs.description,
+      loggedAt: worklogs.loggedAt,
+      userName: users.name,
+      userEmail: users.email,
+    })
+    .from(worklogs)
+    .leftJoin(users, eq(worklogs.userId, users.id))
+    .where(eq(worklogs.issueId, issueId))
+    .orderBy(worklogs.loggedAt);
+
   const subIssueRows = await db
     .select({
       id: issues.id,
@@ -115,6 +130,7 @@ export default async function IssueDetailPage({ params }: Props) {
         comments={comments}
         assignees={assignees}
         subIssues={subIssueRows}
+        worklogs={worklogRows}
         projectId={projectId}
         workspaceSlug={workspaceSlug}
         currentUserId={session.user.id}

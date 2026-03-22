@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Table,
   GanttChart,
+  Milestone,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -36,6 +37,7 @@ const PROJECT_NAV = [
   { label: 'Gantt', href: 'gantt', icon: GanttChart },
   { label: 'Cycles', href: 'cycles', icon: Calendar },
   { label: 'Modules', href: 'modules', icon: Layers },
+  { label: 'Epics', href: 'epics', icon: Milestone },
   { label: 'Pages', href: 'pages', icon: BookOpen },
   { label: 'Intake', href: 'intake', icon: Inbox },
 ];
@@ -67,6 +69,16 @@ export function AppSidebar({ workspaceSlug, projects, currentProjectId }: Props)
         >
           <Bell className="h-4 w-4" />
           Inbox
+        </Link>
+        <Link
+          href={`/${workspaceSlug}/initiatives`}
+          className={cn(
+            'flex items-center gap-2 px-3 py-2 rounded text-sm hover:bg-gray-800',
+            pathname.startsWith(`/${workspaceSlug}/initiatives`) && 'bg-gray-800',
+          )}
+        >
+          <Milestone className="h-4 w-4" />
+          Initiatives
         </Link>
 
         <div className="mt-4">

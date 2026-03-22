@@ -25,5 +25,17 @@ export * from './pages';
 // Intake
 export * from './intake';
 
+// Epics
+export * from './epics';
+
+// Initiatives
+export * from './initiatives';
+
+// Custom issue properties
+export * from './custom-properties';
+
+// Time tracking / worklogs
+export * from './worklogs';
+
 // Notifications
 export * from './notifications';
