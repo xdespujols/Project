@@ -9,8 +9,11 @@ import {
   Calendar,
   BookOpen,
   Inbox,
+  Bell,
   Settings,
   ChevronDown,
+  Table,
+  GanttChart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -29,9 +32,12 @@ type Props = {
 const PROJECT_NAV = [
   { label: 'Issues', href: 'issues', icon: Circle },
   { label: 'Board', href: 'board', icon: LayoutDashboard },
+  { label: 'Spreadsheet', href: 'spreadsheet', icon: Table },
+  { label: 'Gantt', href: 'gantt', icon: GanttChart },
   { label: 'Cycles', href: 'cycles', icon: Calendar },
   { label: 'Modules', href: 'modules', icon: Layers },
   { label: 'Pages', href: 'pages', icon: BookOpen },
+  { label: 'Intake', href: 'intake', icon: Inbox },
 ];
 
 export function AppSidebar({ workspaceSlug, projects, currentProjectId }: Props) {
@@ -59,7 +65,7 @@ export function AppSidebar({ workspaceSlug, projects, currentProjectId }: Props)
             pathname === `/${workspaceSlug}` && 'bg-gray-800',
           )}
         >
-          <Inbox className="h-4 w-4" />
+          <Bell className="h-4 w-4" />
           Inbox
         </Link>
 

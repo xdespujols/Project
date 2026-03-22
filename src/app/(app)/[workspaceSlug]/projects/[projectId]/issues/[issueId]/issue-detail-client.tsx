@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AssigneeSelector } from '@/components/issues/assignee-selector';
+import { SubIssues } from '@/components/issues/sub-issues';
 import { cn } from '@/lib/utils';
 
 type State = { id: string; name: string; color: string };
@@ -44,6 +45,7 @@ type Issue = {
 };
 
 type Assignee = { id: string; name: string | null; email: string | null };
+type SubIssue = { id: string; title: string; sequenceId: number; priority: string; stateColor?: string | null; stateName?: string | null };
 
 type Props = {
   issue: Issue;
@@ -52,6 +54,7 @@ type Props = {
   activities: Activity[];
   comments: Comment[];
   assignees: Assignee[];
+  subIssues: SubIssue[];
   projectId: string;
   workspaceSlug: string;
   currentUserId: string;
@@ -73,6 +76,7 @@ export function IssueDetailClient({
   activities,
   comments,
   assignees,
+  subIssues,
   projectId,
   workspaceSlug,
   currentUserId,
@@ -185,6 +189,14 @@ export function IssueDetailClient({
             </Button>
           </div>
         </div>
+
+        {/* Sub-issues */}
+        <SubIssues
+          parentId={issue.id}
+          projectId={projectId}
+          workspaceSlug={workspaceSlug}
+          subIssues={subIssues}
+        />
 
         {/* Activity */}
         <div className="mb-8">

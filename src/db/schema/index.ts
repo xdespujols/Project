@@ -19,5 +19,11 @@ export * from './cycles';
 // Modules
 export * from './modules';
 
+// Pages / Wiki
+export * from './pages';
+
+// Intake
+export * from './intake';
+
 // Notifications
 export * from './notifications';

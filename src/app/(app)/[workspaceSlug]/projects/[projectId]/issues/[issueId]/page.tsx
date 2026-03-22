@@ -10,10 +10,11 @@ import {
   users,
   labels,
 } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { IssueDetailClient } from './issue-detail-client';
+import { SubIssues } from '@/components/issues/sub-issues';
 
 type Props = {
   params: Promise<{ workspaceSlug: string; projectId: string; issueId: string }>;
@@ -78,6 +79,20 @@ export default async function IssueDetailPage({ params }: Props) {
     .innerJoin(users, eq(issueAssignees.userId, users.id))
     .where(eq(issueAssignees.issueId, issueId));
 
+  const subIssueRows = await db
+    .select({
+      id: issues.id,
+      title: issues.title,
+      sequenceId: issues.sequenceId,
+      priority: issues.priority,
+      stateId: issues.stateId,
+      stateColor: states.color,
+      stateName: states.name,
+    })
+    .from(issues)
+    .leftJoin(states, eq(issues.stateId, states.id))
+    .where(and(eq(issues.parentId, issueId), eq(issues.projectId, projectId)));
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 px-6 py-4 border-b">
@@ -99,6 +114,7 @@ export default async function IssueDetailPage({ params }: Props) {
         activities={activities}
         comments={comments}
         assignees={assignees}
+        subIssues={subIssueRows}
         projectId={projectId}
         workspaceSlug={workspaceSlug}
         currentUserId={session.user.id}
