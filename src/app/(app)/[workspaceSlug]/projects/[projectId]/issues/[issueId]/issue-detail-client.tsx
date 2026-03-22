@@ -51,6 +51,7 @@ type Issue = {
   stateId: string | null;
   sequenceId: number;
   dueDate: string | null;
+  estimate: number | null;
 };
 
 type Assignee = { id: string; name: string | null; email: string | null };
@@ -99,6 +100,7 @@ export function IssueDetailClient({
   const [editingTitle, setEditingTitle] = useState(false);
   const [stateId, setStateId] = useState(issue.stateId || '');
   const [priority, setPriority] = useState(issue.priority);
+  const [estimate, setEstimate] = useState<string>(issue.estimate?.toString() ?? '');
   const [descJson, setDescJson] = useState<object | null>(
     (issue.description as object) ?? null,
   );
@@ -347,6 +349,25 @@ export function IssueDetailClient({
               issueId={issue.id}
               workspaceSlug={workspaceSlug}
               initialAssignees={assignees}
+            />
+          </div>
+
+          <div>
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider block mb-1">
+              Estimate (pts)
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.5"
+              value={estimate}
+              onChange={(e) => setEstimate(e.target.value)}
+              onBlur={() => {
+                const val = estimate === '' ? null : parseFloat(estimate);
+                patch({ estimate: val });
+              }}
+              className="w-full text-sm border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-indigo-400"
+              placeholder="—"
             />
           </div>
 

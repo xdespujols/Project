@@ -1,11 +1,12 @@
 import { auth } from '../../../../../../../auth';
 import { redirect } from 'next/navigation';
 import { db } from '@/db';
-import { states, labels, projects, customProperties } from '@/db/schema';
+import { states, labels, projects, customProperties, automations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { StatesManager } from './states-manager';
 import { LabelsManager } from './labels-manager';
 import { CustomPropertiesManager } from './custom-properties-manager';
+import { AutomationsManager } from './automations-manager';
 
 type Props = { params: Promise<{ workspaceSlug: string; projectId: string }> };
 
@@ -37,6 +38,12 @@ export default async function ProjectSettingsPage({ params }: Props) {
     .where(eq(customProperties.projectId, projectId))
     .orderBy(customProperties.sortOrder);
 
+  const projectAutomations = await db
+    .select()
+    .from(automations)
+    .where(eq(automations.projectId, projectId))
+    .orderBy(automations.createdAt);
+
   return (
     <div className="max-w-3xl mx-auto p-8">
       <h1 className="text-2xl font-bold mb-8">{project?.name} Settings</h1>
@@ -51,9 +58,14 @@ export default async function ProjectSettingsPage({ params }: Props) {
         <LabelsManager labels={projectLabels} projectId={projectId} />
       </section>
 
-      <section>
+      <section className="mb-12">
         <h2 className="text-lg font-semibold mb-4">Custom Properties</h2>
         <CustomPropertiesManager properties={projectProperties} projectId={projectId} />
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold mb-4">Automations</h2>
+        <AutomationsManager automations={projectAutomations} projectId={projectId} />
       </section>
     </div>
   );

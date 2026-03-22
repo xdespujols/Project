@@ -4,6 +4,7 @@ import { issues, issueActivities } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { apiResponse, apiError } from '@/lib/utils';
+import { automationsQueue } from '@/lib/queue';
 
 const patchSchema = z.object({
   title: z.string().min(1).max(500).optional(),
@@ -12,11 +13,12 @@ const patchSchema = z.object({
   descriptionText: z.string().optional(),
   description: z.any().optional(),
   dueDate: z.string().nullable().optional(),
+  estimate: z.number().nullable().optional(),
 });
 
 export async function GET(
   req: Request,
-  { params }: { params: Promise<{ issueId: string }> },
+  { params }: { params: Promise<{ projectId: string; issueId: string }> },
 ) {
   const { issueId } = await params;
   const session = await auth();
@@ -30,9 +32,9 @@ export async function GET(
 
 export async function PATCH(
   req: Request,
-  { params }: { params: Promise<{ issueId: string }> },
+  { params }: { params: Promise<{ projectId: string; issueId: string }> },
 ) {
-  const { issueId } = await params;
+  const { projectId, issueId } = await params;
   const session = await auth();
   if (!session?.user?.id) return apiError('Unauthorized', 401);
 
@@ -70,12 +72,29 @@ export async function PATCH(
     await db.insert(issueActivities).values(activities);
   }
 
+  // Fire automation triggers asynchronously (non-blocking)
+  for (const activity of activities) {
+    const triggerMap: Record<string, string> = {
+      stateId: 'issue_state_changed',
+      priority: 'issue_priority_changed',
+    };
+    const triggerType = triggerMap[activity.field];
+    if (triggerType) {
+      automationsQueue.add(triggerType, {
+        projectId,
+        issueId,
+        triggerType,
+        triggerData: { field: activity.field, oldValue: activity.oldValue, newValue: activity.newValue },
+      }).catch(() => { /* non-critical */ });
+    }
+  }
+
   return apiResponse(updated);
 }
 
 export async function DELETE(
   req: Request,
-  { params }: { params: Promise<{ issueId: string }> },
+  { params }: { params: Promise<{ projectId: string; issueId: string }> },
 ) {
   const { issueId } = await params;
   const session = await auth();

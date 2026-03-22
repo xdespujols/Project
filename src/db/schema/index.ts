@@ -37,5 +37,8 @@ export * from './custom-properties';
 // Time tracking / worklogs
 export * from './worklogs';
 
+// Automations
+export * from './automations';
+
 // Notifications
 export * from './notifications';

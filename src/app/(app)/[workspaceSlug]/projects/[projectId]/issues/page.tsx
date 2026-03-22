@@ -6,6 +6,7 @@ import { eq, and, desc, inArray } from 'drizzle-orm';
 import { IssueListView } from '@/components/issues/views/list-view';
 import { CreateIssueButton } from '@/components/issues/create-issue-button';
 import { IssueFilters } from '@/components/issues/issue-filters';
+import { IssueSearch } from '@/components/issues/issue-search';
 
 type Props = {
   params: Promise<{ workspaceSlug: string; projectId: string }>;
@@ -50,6 +51,7 @@ export default async function IssuesPage({ params, searchParams }: Props) {
           <div className="flex items-center justify-between px-6 py-3 border-b flex-wrap gap-3">
             <h1 className="text-lg font-semibold">{project?.name} / Issues</h1>
             <div className="flex items-center gap-3 flex-wrap">
+              <IssueSearch projectId={projectId} workspaceSlug={workspaceSlug} />
               <IssueFilters states={projectStates} labels={projectLabels} />
               <CreateIssueButton projectId={projectId} states={projectStates} />
             </div>
@@ -76,6 +78,7 @@ export default async function IssuesPage({ params, searchParams }: Props) {
       <div className="flex items-center justify-between px-6 py-3 border-b flex-wrap gap-3">
         <h1 className="text-lg font-semibold">{project?.name} / Issues</h1>
         <div className="flex items-center gap-3 flex-wrap">
+          <IssueSearch projectId={projectId} workspaceSlug={workspaceSlug} />
           <IssueFilters states={projectStates} labels={projectLabels} />
           <CreateIssueButton projectId={projectId} states={projectStates} />
         </div>

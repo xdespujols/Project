@@ -7,6 +7,7 @@ import {
   date,
   jsonb,
   pgEnum,
+  real,
 } from 'drizzle-orm/pg-core';
 import { sql, relations } from 'drizzle-orm';
 import { users } from './auth';
@@ -36,6 +37,7 @@ export const issues = pgTable('issues', {
   sortOrder: integer('sort_order').notNull().default(0),
   startDate: date('start_date'),
   dueDate: date('due_date'),
+  estimate: real('estimate'), // story points or hours
   completedAt: timestamp('completed_at'),
   createdBy: text('created_by').references(() => users.id),
   createdAt: timestamp('created_at').defaultNow().notNull(),
