@@ -1,8 +1,9 @@
 'use client';
 
 import { signOut } from 'next-auth/react';
-import { Bell, LogOut, User } from 'lucide-react';
+import { LogOut, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { NotificationsPanel } from './notifications-panel';
 
 type Props = {
   userName?: string | null;
@@ -12,9 +13,7 @@ export function Topbar({ userName }: Props) {
   return (
     <header className="h-14 border-b bg-white flex items-center px-4 gap-4">
       <div className="flex-1" />
-      <Button variant="ghost" size="icon">
-        <Bell className="h-4 w-4" />
-      </Button>
+      <NotificationsPanel />
       <div className="flex items-center gap-2 text-sm text-gray-700">
         <User className="h-4 w-4" />
         {userName}
