@@ -12,3 +12,4 @@ const connection = {
 export const notificationsQueue = new Queue('notifications', { connection });
 export const automationsQueue = new Queue('automations', { connection });
 export const emailQueue = new Queue('email', { connection });
+export const webhooksQueue = new Queue('webhooks', { connection });
