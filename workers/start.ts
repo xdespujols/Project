@@ -153,4 +153,82 @@ emailWorker.on('failed', (job, err) => {
   console.error(`[email] Job ${job?.id} failed:`, err);
 });
 
-console.log('Workers started: notifications, automations, email');
+// --- Webhooks worker ---
+const webhooksWorker = new Worker(
+  'webhooks',
+  async (job) => {
+    const { workspaceId, projectId, event, payload } = job.data as {
+      workspaceId: string;
+      projectId?: string;
+      event: string;
+      payload: Record<string, unknown>;
+    };
+
+    console.log(`[webhooks] Delivering event=${event} workspace=${workspaceId}`);
+
+    // Find matching active webhooks
+    const matching = await db
+      .select()
+      .from(schema.webhooks)
+      .where(
+        and(
+          eq(schema.webhooks.workspaceId, workspaceId),
+          eq(schema.webhooks.isActive, true),
+        ),
+      );
+
+    for (const webhook of matching) {
+      // Filter by project if set
+      if (webhook.projectId && webhook.projectId !== projectId) continue;
+
+      // Filter by subscribed events
+      const events = webhook.events as string[];
+      if (!events.includes(event) && !events.includes('*')) continue;
+
+      const body = JSON.stringify({ event, payload, timestamp: new Date().toISOString() });
+
+      // HMAC-SHA256 signature
+      const { createHmac } = await import('node:crypto');
+      const sig = createHmac('sha256', webhook.secret).update(body).digest('hex');
+
+      let statusCode = '';
+      let responseBody = '';
+      let success = false;
+
+      try {
+        const res = await fetch(webhook.url, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Plane-Signature': `sha256=${sig}`,
+            'X-Plane-Event': event,
+          },
+          body,
+          signal: AbortSignal.timeout(10_000),
+        });
+        statusCode = String(res.status);
+        responseBody = await res.text().catch(() => '');
+        success = res.ok;
+      } catch (err) {
+        statusCode = 'timeout';
+        responseBody = String(err);
+      }
+
+      await db.insert(schema.webhookDeliveries).values({
+        webhookId: webhook.id,
+        event,
+        payload,
+        statusCode,
+        responseBody: responseBody.slice(0, 1000),
+        success,
+      });
+    }
+  },
+  { connection },
+);
+
+webhooksWorker.on('failed', (job, err) => {
+  console.error(`[webhooks] Job ${job?.id} failed:`, err);
+});
+
+console.log('Workers started: notifications, automations, email, webhooks');

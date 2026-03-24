@@ -5,6 +5,7 @@ import { eq } from 'drizzle-orm';
 import { z } from 'zod';
 import { apiResponse, apiError } from '@/lib/utils';
 import { automationsQueue } from '@/lib/queue';
+import { publishProjectEvent } from '@/lib/pubsub';
 
 const patchSchema = z.object({
   title: z.string().min(1).max(500).optional(),
@@ -88,6 +89,9 @@ export async function PATCH(
       }).catch(() => { /* non-critical */ });
     }
   }
+
+  // Publish SSE event (best-effort)
+  publishProjectEvent(projectId, { type: 'issue.updated', issueId, fields: Object.keys(updates) });
 
   return apiResponse(updated);
 }

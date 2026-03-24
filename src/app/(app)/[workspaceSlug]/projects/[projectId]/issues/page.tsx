@@ -7,6 +7,8 @@ import { IssueListView } from '@/components/issues/views/list-view';
 import { CreateIssueButton } from '@/components/issues/create-issue-button';
 import { IssueFilters } from '@/components/issues/issue-filters';
 import { IssueSearch } from '@/components/issues/issue-search';
+import { ImportExportButtons } from '@/components/issues/import-export-buttons';
+import { SavedViewsBar } from '@/components/issues/saved-views-bar';
 
 type Props = {
   params: Promise<{ workspaceSlug: string; projectId: string }>;
@@ -78,11 +80,17 @@ export default async function IssuesPage({ params, searchParams }: Props) {
       <div className="flex items-center justify-between px-6 py-3 border-b flex-wrap gap-3">
         <h1 className="text-lg font-semibold">{project?.name} / Issues</h1>
         <div className="flex items-center gap-3 flex-wrap">
+          <ImportExportButtons projectId={projectId} />
           <IssueSearch projectId={projectId} workspaceSlug={workspaceSlug} />
           <IssueFilters states={projectStates} labels={projectLabels} />
           <CreateIssueButton projectId={projectId} states={projectStates} />
         </div>
       </div>
+      <SavedViewsBar
+        projectId={projectId}
+        workspaceSlug={workspaceSlug}
+        activeFilters={{ state: stateFilter, priority: priorityFilter, label: labelFilter }}
+      />
       <IssueListView
         issues={issueList}
         states={projectStates}

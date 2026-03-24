@@ -4,6 +4,7 @@ import { issueComments, issueActivities } from '@/db/schema';
 import { eq, asc } from 'drizzle-orm';
 import { z } from 'zod';
 import { apiResponse, apiError } from '@/lib/utils';
+import { publishProjectEvent } from '@/lib/pubsub';
 
 const createSchema = z.object({
   comment: z.any().optional(),
@@ -55,6 +56,8 @@ export async function POST(
     field: 'comment',
     newValue: 'added',
   });
+
+  publishProjectEvent(projectId, { type: 'comment.created', issueId, commentId: comment.id });
 
   return apiResponse(comment, 201);
 }
