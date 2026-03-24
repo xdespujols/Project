@@ -15,6 +15,7 @@ import {
   Table,
   GanttChart,
   Milestone,
+  BarChart2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -40,6 +41,7 @@ const PROJECT_NAV = [
   { label: 'Epics', href: 'epics', icon: Milestone },
   { label: 'Pages', href: 'pages', icon: BookOpen },
   { label: 'Intake', href: 'intake', icon: Inbox },
+  { label: 'Analytics', href: 'analytics', icon: BarChart2 },
 ];
 
 export function AppSidebar({ workspaceSlug, projects, currentProjectId }: Props) {
@@ -61,14 +63,14 @@ export function AppSidebar({ workspaceSlug, projects, currentProjectId }: Props)
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto p-2">
         <Link
-          href={`/${workspaceSlug}`}
+          href={`/${workspaceSlug}/notifications`}
           className={cn(
             'flex items-center gap-2 px-3 py-2 rounded text-sm hover:bg-gray-800',
-            pathname === `/${workspaceSlug}` && 'bg-gray-800',
+            pathname === `/${workspaceSlug}/notifications` && 'bg-gray-800',
           )}
         >
           <Bell className="h-4 w-4" />
-          Inbox
+          Notifications
         </Link>
         <Link
           href={`/${workspaceSlug}/initiatives`}
