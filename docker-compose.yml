@@ -1,0 +1,85 @@
+services:
+  # ── PostgreSQL ─────────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-plane}
+      POSTGRES_USER:     ${POSTGRES_USER:-plane}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-plane}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──────────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── DB migrations (runs once, then exits) ─────────────────────────────────────
+  migrate:
+    build: { context: ., dockerfile: Dockerfile.worker }
+    command: ["npx", "drizzle-kit", "migrate"]
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-plane}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-plane}
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
+  # ── Next.js app ────────────────────────────────────────────────────────────────
+  web:
+    build: { context: ., dockerfile: Dockerfile }
+    restart: unless-stopped
+    ports:
+      - "${PORT:-3000}:3000"
+    environment:
+      DATABASE_URL:         postgresql://${POSTGRES_USER:-plane}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-plane}
+      REDIS_URL:            redis://redis:6379
+      AUTH_SECRET:          ${AUTH_SECRET:?required}
+      AUTH_URL:             ${AUTH_URL:?required}
+      GITHUB_CLIENT_ID:     ${GITHUB_CLIENT_ID:-}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-}
+      GOOGLE_CLIENT_ID:     ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      AWS_ACCESS_KEY_ID:    ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION:           ${AWS_REGION:-us-east-1}
+      AWS_BUCKET_NAME:      ${AWS_BUCKET_NAME:-}
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  # ── BullMQ workers ─────────────────────────────────────────────────────────────
+  worker:
+    build: { context: ., dockerfile: Dockerfile.worker }
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-plane}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-plane}
+      REDIS_URL:    redis://redis:6379
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db_data:
+  redis_data:
