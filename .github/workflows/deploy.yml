@@ -1,4 +1,4 @@
-name: Deploy to Coolify
+name: Deploy to CapRover
 
 on:
   push:
@@ -7,10 +7,60 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # push images to GHCR
+
     steps:
-      - name: Trigger Coolify deploy
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build & push web image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ghcr.io/${{ github.repository }}:web-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & push worker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile.worker
+          push: true
+          tags: ghcr.io/${{ github.repository }}:worker-latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy web → CapRover
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}:web-latest
+          SHA: ${{ github.sha }}
         run: |
-          curl -fsSL \
-            -X GET \
-            -H "Authorization: Bearer ${{ secrets.COOLIFY_WEBHOOK_TOKEN }}" \
-            "${{ secrets.COOLIFY_WEBHOOK_URL }}"
+          curl -fsSL -X POST \
+            "${{ secrets.CAPROVER_URL }}/api/v2/user/apps/appData/plane-web" \
+            -H "x-captain-auth: ${{ secrets.CAPROVER_APP_TOKEN_WEB }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"captainDefinitionContent\":\"{\\\"schemaVersion\\\":2,\\\"imageName\\\":\\\"${IMAGE}\\\"}\",\"gitHash\":\"${SHA}\"}"
+
+      - name: Deploy worker → CapRover
+        env:
+          IMAGE: ghcr.io/${{ github.repository }}:worker-latest
+          SHA: ${{ github.sha }}
+        run: |
+          curl -fsSL -X POST \
+            "${{ secrets.CAPROVER_URL }}/api/v2/user/apps/appData/plane-worker" \
+            -H "x-captain-auth: ${{ secrets.CAPROVER_APP_TOKEN_WORKER }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"captainDefinitionContent\":\"{\\\"schemaVersion\\\":2,\\\"imageName\\\":\\\"${IMAGE}\\\"}\",\"gitHash\":\"${SHA}\"}"
