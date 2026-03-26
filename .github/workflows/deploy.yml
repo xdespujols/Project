@@ -1,72 +1,36 @@
-name: Deploy to CapRover
+name: Deploy worker to CapRover
+
+# The web app (plane-web) is deployed automatically by CapRover's
+# native GitHub integration (Method 3) via a webhook.
+# This workflow only handles the worker, which needs a different Dockerfile.
 
 on:
   push:
     branches: [main]
 
 jobs:
-  deploy:
+  deploy-worker:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: write # push images to GHCR
 
     steps:
       - uses: actions/checkout@v4
 
-      - uses: docker/setup-buildx-action@v3
-
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      # Tag with both :web-latest (for CapRover) and :<sha> (for rollback)
-      - name: Build & push web image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:web-latest
-            ghcr.io/${{ github.repository }}:web-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Build & push worker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ./Dockerfile.worker
-          push: true
-          tags: |
-            ghcr.io/${{ github.repository }}:worker-latest
-            ghcr.io/${{ github.repository }}:worker-${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      # Deploy specific SHA tag so CapRover always pulls the new image
-      - name: Deploy web → CapRover
-        env:
-          IMAGE: ghcr.io/${{ github.repository }}:web-${{ github.sha }}
-          SHA: ${{ github.sha }}
+      - name: Build worker tarball
         run: |
-          curl -fsSL -X POST \
-            "${{ secrets.CAPROVER_URL }}/api/v2/user/apps/appData/plane-web" \
-            -H "x-captain-auth: ${{ secrets.CAPROVER_APP_TOKEN_WEB }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"captainDefinitionContent\":\"{\\\"schemaVersion\\\":2,\\\"imageName\\\":\\\"${IMAGE}\\\"}\",\"gitHash\":\"${SHA}\"}"
+          # Copy full build context, swap Dockerfile.worker → Dockerfile,
+          # and add a captain-definition so CapRover knows what to build.
+          cp -r . /tmp/caprover-worker
+          cd /tmp/caprover-worker
+          cp Dockerfile.worker Dockerfile
+          printf '{"schemaVersion":2,"dockerfilePath":"./Dockerfile"}' > captain-definition
+          tar -czf /tmp/worker.tar.gz .
 
       - name: Deploy worker → CapRover
-        env:
-          IMAGE: ghcr.io/${{ github.repository }}:worker-${{ github.sha }}
-          SHA: ${{ github.sha }}
         run: |
           curl -fsSL -X POST \
             "${{ secrets.CAPROVER_URL }}/api/v2/user/apps/appData/plane-worker" \
             -H "x-captain-auth: ${{ secrets.CAPROVER_APP_TOKEN_WORKER }}" \
-            -H "Content-Type: application/json" \
-            -d "{\"captainDefinitionContent\":\"{\\\"schemaVersion\\\":2,\\\"imageName\\\":\\\"${IMAGE}\\\"}\",\"gitHash\":\"${SHA}\"}"
+            -F "sourceFile=@/tmp/worker.tar.gz" \
+            -F "gitHash=${{ github.sha }}"
